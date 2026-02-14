@@ -171,8 +171,10 @@ const App = () => {
       // Check if daily check-in needed
       const lastCheckIn = localStorage.getItem('calmmom-last-checkin');
       const today = new Date().toDateString();
+      
+      // Show check-in if: never done before OR last check-in was a different day
       if (!lastCheckIn || new Date(lastCheckIn).toDateString() !== today) {
-        setShowCheckIn(true);
+        setTimeout(() => setShowCheckIn(true), 1000); // Small delay for better UX
       }
 
       // Load streak
@@ -673,6 +675,13 @@ const App = () => {
           </div>
           
           <div className="flex-1 space-y-4">
+            <button
+              onClick={() => setShowCheckIn(true)}
+              className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+            >
+              Daily Check-In
+            </button>
+
             <div className="p-4 bg-green-50 rounded-lg">
               <h3 className="font-medium text-green-900 mb-2">Quick Tools</h3>
               <ul className="space-y-2 text-sm text-green-800">
