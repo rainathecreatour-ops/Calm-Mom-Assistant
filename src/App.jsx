@@ -58,9 +58,8 @@ NEVER:
   useEffect(() => {
     const checkStoredLicense = async () => {
       try {
-        const result = await window.storage.get('calmmom-license');
-        if (result?.value) {
-          const storedKey = result.value;
+        const storedKey = localStorage.getItem('calmmom-license');
+        if (storedKey) {
           const isValid = await verifyLicenseKey(storedKey, true);
           if (isValid) {
             setLicenseKey(storedKey);
@@ -82,19 +81,16 @@ NEVER:
 
   useEffect(() => {
     if (isLicensed) {
-      const loadMessages = async () => {
-        try {
-          const result = await window.storage.get('calmmom-messages');
-          if (result?.value) {
-            const saved = JSON.parse(result.value);
-            setMessages(saved);
-            setShowWelcome(saved.length === 0);
-          }
-        } catch (error) {
-          console.log('No saved messages');
+      try {
+        const saved = localStorage.getItem('calmmom-messages');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setMessages(parsed);
+          setShowWelcome(parsed.length === 0);
         }
-      };
-      loadMessages();
+      } catch (error) {
+        console.log('No saved messages');
+      }
     }
   }, [isLicensed]);
 
@@ -128,11 +124,7 @@ NEVER:
 
     if (isValid) {
       setIsLicensed(true);
-      try {
-        await window.storage.set('calmmom-license', licenseKey);
-      } catch (error) {
-        console.error('Failed to save license:', error);
-      }
+      localStorage.setItem('calmmom-license', licenseKey);
     } else {
       setLicenseError('Invalid license key. Please check and try again.');
     }
@@ -140,12 +132,8 @@ NEVER:
     setVerifying(false);
   };
 
-  const saveMessages = async (msgs) => {
-    try {
-      await window.storage.set('calmmom-messages', JSON.stringify(msgs));
-    } catch (error) {
-      console.error('Failed to save messages:', error);
-    }
+  const saveMessages = (msgs) => {
+    localStorage.setItem('calmmom-messages', JSON.stringify(msgs));
   };
 
   const sendMessage = async () => {
@@ -180,7 +168,7 @@ NEVER:
 
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
-      await saveMessages(updatedMessages);
+      saveMessages(updatedMessages);
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = {
@@ -194,14 +182,10 @@ NEVER:
     }
   };
 
-  const clearChat = async () => {
+  const clearChat = () => {
     setMessages([]);
     setShowWelcome(true);
-    try {
-      await window.storage.delete('calmmom-messages');
-    } catch (error) {
-      console.error('Failed to clear messages:', error);
-    }
+    localStorage.removeItem('calmmom-messages');
     setSidebarOpen(false);
   };
 
@@ -302,7 +286,7 @@ NEVER:
     );
   }
 
-  // Main app (same as before)
+  // Main app
   return (
     <div className="flex h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Sidebar */}
