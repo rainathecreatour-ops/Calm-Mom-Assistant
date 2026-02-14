@@ -16,7 +16,7 @@ const App = () => {
   const [licenseError, setLicenseError] = useState('');
   const [checkingLicense, setCheckingLicense] = useState(true);
 
-  const SYSTEM_PROMPT = `You are CalmMom AI — a warm, soothing, emotionally supportive assistant for overwhelmed mothers.
+  const SYSTEM_PROMPT = `You are CalmMom Assistant — a warm, soothing, emotionally supportive assistant for overwhelmed mothers.
 
 CORE BEHAVIOR RULES:
 - Always speak in a calm, gentle, reassuring tone.
@@ -235,7 +235,7 @@ NEVER:
               <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
                 <Heart className="w-12 h-12 text-green-600" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to CalmMom AI</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to CalmMom Assistant</h1>
               <p className="text-gray-600">Your safe space for motherhood support</p>
             </div>
 
@@ -309,7 +309,7 @@ NEVER:
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-semibold text-green-800">CalmMom AI</h2>
+            <h2 className="text-xl font-semibold text-green-800">CalmMom Assistant</h2>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
               <X className="w-6 h-6 text-gray-600" />
             </button>
@@ -367,7 +367,7 @@ NEVER:
               <div className="inline-block p-4 bg-green-100 rounded-full">
                 <Sparkles className="w-12 h-12 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-800">Welcome to CalmMom AI 🌿</h2>
+              <h2 className="text-3xl font-bold text-gray-800">Welcome to CalmMom Assistant 🌿</h2>
               <div className="space-y-3 text-gray-600 text-lg leading-relaxed">
                 <p>This is your quiet place when life feels loud.</p>
                 <p>Your reset button when overwhelm hits.</p>
