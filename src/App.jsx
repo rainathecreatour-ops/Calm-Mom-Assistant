@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Send, Sparkles, Menu, X, Lock, Check, CheckCircle, Circle, TrendingUp, Target, AlertCircle } from 'lucide-react';
+import { Heart, Send, Sparkles, Menu, X, Lock, Check, CheckCircle, Circle, TrendingUp, Target, AlertCircle, Mic, MicOff } from 'lucide-react';
 
 // ============================================================================
 // ENHANCED SYSTEM PROMPT - The Core Intelligence
@@ -95,6 +95,10 @@ const App = () => {
   const [checkInData, setCheckInData] = useState(null);
   const [accountabilityMessage, setAccountabilityMessage] = useState(null);
 
+  // Voice input state
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState(null);
+
   // ============================================================================
   // UTILITY FUNCTIONS
   // ============================================================================
@@ -176,6 +180,32 @@ const App = () => {
       if (savedStreak) {
         setStreak(parseInt(savedStreak));
       }
+
+      // Initialize speech recognition
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognitionInstance = new SpeechRecognition();
+        recognitionInstance.continuous = false;
+        recognitionInstance.interimResults = false;
+        recognitionInstance.lang = 'en-US';
+
+        recognitionInstance.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          setInput(prev => prev + (prev ? ' ' : '') + transcript);
+          setIsListening(false);
+        };
+
+        recognitionInstance.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+
+        recognitionInstance.onend = () => {
+          setIsListening(false);
+        };
+
+        setRecognition(recognitionInstance);
+      }
     }
   }, [isLicensed]);
 
@@ -250,7 +280,7 @@ const App = () => {
     saveActions(updated);
   };
 
-  const handleCheckInComplete = (data) => {
+  const handleCheckInComplete = async (data) => {
     setCheckInData(data);
     setShowCheckIn(false);
     localStorage.setItem('calmmom-last-checkin', new Date().toISOString());
@@ -259,6 +289,44 @@ const App = () => {
     const newStreak = streak + 1;
     setStreak(newStreak);
     localStorage.setItem('calmmom-streak', newStreak.toString());
+
+    // Generate AI response based on check-in
+    const checkInMessage = `My mood today is ${data.mood}/5, my energy is ${data.energy}/5, and I want to focus on: ${data.priority}`;
+    
+    const userMessage = { role: 'user', content: checkInMessage };
+    const newMessages = [userMessage];
+    setMessages(newMessages);
+    setLoading(true);
+    setShowWelcome(false);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          system: ENHANCED_SYSTEM_PROMPT + '\n\nThis is the user\'s first message today from their daily check-in. Acknowledge their mood/energy, validate how they\'re feeling, and help them think through their stated priority with 1-2 actionable first steps.',
+          messages: newMessages,
+        }),
+      });
+
+      const responseData = await response.json();
+      
+      if (responseData.success) {
+        const assistantMessage = {
+          role: 'assistant',
+          content: responseData.content[0].text,
+        };
+        const updatedMessages = [...newMessages, assistantMessage];
+        setMessages(updatedMessages);
+        saveMessages(updatedMessages);
+      }
+    } catch (error) {
+      console.error('Check-in response error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -330,6 +398,21 @@ const App = () => {
     setShowWelcome(true);
     localStorage.removeItem('calmmom-messages');
     setSidebarOpen(false);
+  };
+
+  const toggleVoiceInput = () => {
+    if (!recognition) {
+      alert('Voice input is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
   };
 
   const quickPrompts = [
@@ -724,12 +807,24 @@ const App = () => {
         {/* Input */}
         <div className="bg-white border-t border-gray-200 p-4">
           <div className="max-w-3xl mx-auto flex gap-2">
+            <button
+              onClick={toggleVoiceInput}
+              disabled={loading}
+              className={`px-4 py-3 rounded-lg transition-colors flex items-center ${
+                isListening 
+                  ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              } disabled:opacity-50`}
+              title={isListening ? 'Stop listening' : 'Start voice input'}
+            >
+              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Share what's on your mind..."
+              placeholder={isListening ? "Listening..." : "Share what's on your mind..."}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               disabled={loading}
             />
@@ -741,6 +836,11 @@ const App = () => {
               <Send className="w-5 h-5" />
             </button>
           </div>
+          {isListening && (
+            <p className="text-center text-sm text-red-600 mt-2 animate-pulse">
+              🎤 Listening...
+            </p>
+          )}
         </div>
       </div>
     </div>
