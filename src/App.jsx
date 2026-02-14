@@ -1,6 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Send, Sparkles, Menu, X, Lock, Check } from 'lucide-react';
+import { Heart, Send, Sparkles, Menu, X, Lock, Check, CheckCircle, Circle, TrendingUp, Target, AlertCircle } from 'lucide-react';
 
+// ============================================================================
+// ENHANCED SYSTEM PROMPT - The Core Intelligence
+// ============================================================================
+const ENHANCED_SYSTEM_PROMPT = `You are CalmMom Assistant — a warm but empowering support system for mothers. You balance emotional validation with gentle accountability.
+
+CORE PHILOSOPHY:
+You are NOT a therapist or a friend who just listens. You are a supportive COACH who helps moms process emotions AND take action. Like the Mia AI app, you're there to help them move forward, not stay stuck.
+
+INTERACTION FRAMEWORK (Follow in Order):
+
+1. VALIDATE (Always first)
+   - Acknowledge the emotion: "That sounds exhausting..." 
+   - NO toxic positivity: Don't say "at least" or "look on the bright side"
+   - Match their energy: If they're venting, let them vent
+
+2. REALITY CHECK (Gentle but honest)
+   - Ask clarifying questions to understand the full picture
+   - Gently challenge assumptions: "What makes you think you're failing?"
+   - Point out patterns: "You mentioned feeling this way last week too..."
+   - Distinguish between facts and feelings
+
+3. EMPOWER (Not enable)
+   - Remind them of their agency: "What's ONE thing you CAN control here?"
+   - Focus on what's possible, not what's ideal
+   - Celebrate small wins from previous conversations
+   - NO enabling language like "you deserve a break" without context
+   - YES empowering language like "you're capable of handling this"
+
+4. ACTION (Always end with this)
+   - Give 1-3 SPECIFIC, TINY action steps
+   - Make them so small they feel almost too easy
+   - Tie actions to their stated values/goals
+   - Ask for commitment: "Which one will you try today?"
+
+CRITICAL RULES:
+
+DON'T ENABLE:
+- Never suggest avoiding necessary responsibilities
+- Don't validate excuses without exploring them
+- Don't let them ruminate without moving to action
+- Don't give unlimited empathy without accountability
+- Don't suggest self-care as an escape from problems
+
+DO EMPOWER:
+- Help them distinguish between "I can't" and "I don't want to"
+- Remind them of past successes
+- Point out when they're being hard on themselves vs. realistic
+- Challenge limiting beliefs gently
+- Recognize when they need rest vs. when they need action
+
+TONE:
+- Warm but direct
+- Supportive but not coddling  
+- Honest but kind
+- Like a good friend who tells you what you need to hear, not just what you want to hear
+
+RED FLAGS (Refer to professional help):
+- Mentions of self-harm or harming children
+- Severe depression lasting weeks
+- Inability to function in daily life
+
+RESPONSE FORMAT:
+1. Emotional validation (1-2 sentences)
+2. Question or gentle challenge (1 sentence)  
+3. Reframe or insight (1-2 sentences)
+4. Action steps (1-3 concrete items)
+5. Commitment ask (1 sentence)`;
+
+// ============================================================================
+// MAIN APP COMPONENT
+// ============================================================================
 const App = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -16,43 +87,36 @@ const App = () => {
   const [licenseError, setLicenseError] = useState('');
   const [checkingLicense, setCheckingLicense] = useState(true);
 
-  const SYSTEM_PROMPT = `You are CalmMom Assistant — a warm, soothing, emotionally supportive assistant for overwhelmed mothers.
+  // Progress tracking state
+  const [actionItems, setActionItems] = useState([]);
+  const [completedToday, setCompletedToday] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [checkInData, setCheckInData] = useState(null);
+  const [accountabilityMessage, setAccountabilityMessage] = useState(null);
 
-CORE BEHAVIOR RULES:
-- Always speak in a calm, gentle, reassuring tone.
-- Validate the mom's feelings BEFORE offering guidance.
-- Never shame, judge, or pressure.
-- Never promote perfectionism.
-- Never give medical or unsafe advice.
-- Keep responses simple, realistic, and guilt-free.
-- Never overwhelm with long explanations or lists.
-- Offer no more than 2–3 steps unless the user asks for more.
-- Always prioritize emotional regulation, clarity, and calm.
-- Use gentle parenting language only.
-
-WHEN RESPONDING:
-- First: emotionally validate the mom ("That sounds really heavy…").
-- Second: offer simple reassurance ("You're not failing. You're human.").
-- Third: give 2–3 calm, doable steps.
-- End with a reminder that she is doing better than she thinks.
-
-FOR MELTDOWNS / TANTRUMS:
-Always include BOTH:
-1) What mom can SAY (a gentle script)
-2) What mom can DO (simple actions)
-
-ASK CLARIFYING QUESTIONS WHEN NEEDED:
-- Child's age
-- Number of children
-- Time of day
-- Stress level (low / medium / high)
-- What feels hardest right now
-
-NEVER:
-- Shame moms
-- Suggest unsafe actions
-- Give medical advice
-- Push productivity over emotional safety`;
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+  
+  // Pattern detection
+  const detectPatterns = (msgs) => {
+    const recentMessages = msgs.slice(-10);
+    const userMessages = recentMessages.filter(m => m.role === 'user');
+    
+    const negativeKeywords = ['tired', 'exhausted', 'overwhelmed', "can't", 'failing', 'terrible'];
+    let negativeCount = 0;
+    
+    userMessages.forEach(msg => {
+      negativeKeywords.forEach(keyword => {
+        if (msg.content.toLowerCase().includes(keyword)) {
+          negativeCount++;
+        }
+      });
+    });
+    
+    return negativeCount > 5; // Spiraling if 5+ negative indicators
+  };
 
   // Check for existing license on mount
   useEffect(() => {
@@ -75,12 +139,10 @@ NEVER:
     checkStoredLicense();
   }, []);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
+  // Load messages and check for daily check-in
   useEffect(() => {
     if (isLicensed) {
+      // Load messages
       try {
         const saved = localStorage.getItem('calmmom-messages');
         if (saved) {
@@ -91,8 +153,44 @@ NEVER:
       } catch (error) {
         console.log('No saved messages');
       }
+
+      // Load action items
+      try {
+        const savedActions = localStorage.getItem('calmmom-actions');
+        if (savedActions) {
+          setActionItems(JSON.parse(savedActions));
+        }
+      } catch (error) {
+        console.log('No saved actions');
+      }
+
+      // Check if daily check-in needed
+      const lastCheckIn = localStorage.getItem('calmmom-last-checkin');
+      const today = new Date().toDateString();
+      if (!lastCheckIn || new Date(lastCheckIn).toDateString() !== today) {
+        setShowCheckIn(true);
+      }
+
+      // Load streak
+      const savedStreak = localStorage.getItem('calmmom-streak');
+      if (savedStreak) {
+        setStreak(parseInt(savedStreak));
+      }
     }
   }, [isLicensed]);
+
+  // Update completed count when actions change
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const todayCompleted = actionItems.filter(item => 
+      item.completed && item.completedDate && new Date(item.completedDate).toDateString() === today
+    ).length;
+    setCompletedToday(todayCompleted);
+  }, [actionItems]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const verifyLicenseKey = async (key, silent = false) => {
     try {
@@ -136,6 +234,33 @@ NEVER:
     localStorage.setItem('calmmom-messages', JSON.stringify(msgs));
   };
 
+  const saveActions = (actions) => {
+    localStorage.setItem('calmmom-actions', JSON.stringify(actions));
+    setActionItems(actions);
+  };
+
+  const toggleAction = (id) => {
+    const updated = actionItems.map(item => 
+      item.id === id ? { 
+        ...item, 
+        completed: !item.completed,
+        completedDate: !item.completed ? new Date().toISOString() : null
+      } : item
+    );
+    saveActions(updated);
+  };
+
+  const handleCheckInComplete = (data) => {
+    setCheckInData(data);
+    setShowCheckIn(false);
+    localStorage.setItem('calmmom-last-checkin', new Date().toISOString());
+    
+    // Update streak
+    const newStreak = streak + 1;
+    setStreak(newStreak);
+    localStorage.setItem('calmmom-streak', newStreak.toString());
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -146,6 +271,12 @@ NEVER:
     setLoading(true);
     setShowWelcome(false);
 
+    // Add check-in context if available
+    let systemPrompt = ENHANCED_SYSTEM_PROMPT;
+    if (checkInData) {
+      systemPrompt += `\n\nCONTEXT: Today's check-in shows mood: ${checkInData.mood}/5, energy: ${checkInData.energy}/5, priority: "${checkInData.priority}". Keep this in mind.`;
+    }
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -153,7 +284,7 @@ NEVER:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          system: SYSTEM_PROMPT,
+          system: systemPrompt,
           messages: newMessages,
         }),
       });
@@ -172,6 +303,15 @@ NEVER:
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
       saveMessages(updatedMessages);
+
+      // Check for patterns
+      const isSpiraling = detectPatterns(updatedMessages);
+      if (isSpiraling && !accountabilityMessage) {
+        setAccountabilityMessage({
+          type: 'intervention',
+          text: "I'm noticing we've talked about feeling overwhelmed several times. I'm here for you, and I also want to make sure we're moving toward solutions."
+        });
+      }
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = {
@@ -198,6 +338,123 @@ NEVER:
     "I feel guilty about everything",
     "I need a 2-minute reset"
   ];
+
+  // ============================================================================
+  // DAILY CHECK-IN COMPONENT
+  // ============================================================================
+  const DailyCheckInModal = () => {
+    const [step, setStep] = useState(1);
+    const [responses, setResponses] = useState({ mood: null, energy: null, priority: '' });
+
+    const moods = [
+      { emoji: '😫', label: 'Struggling', value: 1 },
+      { emoji: '😔', label: 'Low', value: 2 },
+      { emoji: '😐', label: 'Okay', value: 3 },
+      { emoji: '🙂', label: 'Good', value: 4 },
+      { emoji: '😊', label: 'Great', value: 5 },
+    ];
+
+    const energyLevels = [
+      { label: 'Empty', value: 1 },
+      { label: 'Low', value: 2 },
+      { label: 'Medium', value: 3 },
+      { label: 'Good', value: 4 },
+      { label: 'Full', value: 5 },
+    ];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="text-center mb-6">
+            <div className="inline-block p-3 bg-green-100 rounded-full mb-3">
+              <Heart className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Daily Check-In</h2>
+            <p className="text-gray-600 text-sm mt-1">Let's see how you're doing today</p>
+          </div>
+
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-green-600' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800 text-center">How are you feeling right now?</h3>
+              <div className="grid grid-cols-5 gap-2">
+                {moods.map((mood) => (
+                  <button
+                    key={mood.value}
+                    onClick={() => {
+                      setResponses({ ...responses, mood: mood.value });
+                      setTimeout(() => setStep(2), 300);
+                    }}
+                    className="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50"
+                  >
+                    <span className="text-3xl mb-1">{mood.emoji}</span>
+                    <span className="text-xs text-gray-600">{mood.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800 text-center">What's your energy level?</h3>
+              <div className="space-y-2">
+                {energyLevels.map((level) => (
+                  <button
+                    key={level.value}
+                    onClick={() => {
+                      setResponses({ ...responses, energy: level.value });
+                      setTimeout(() => setStep(3), 300);
+                    }}
+                    className="w-full p-4 rounded-lg bg-green-100 hover:bg-green-200 transition-all text-left font-medium"
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800 text-center">
+                What's ONE thing you want to focus on today?
+              </h3>
+              <textarea
+                value={responses.priority}
+                onChange={(e) => setResponses({ ...responses, priority: e.target.value })}
+                placeholder="Keep it simple... just one thing"
+                className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                rows="3"
+              />
+              <button
+                onClick={() => handleCheckInComplete(responses)}
+                disabled={!responses.priority.trim()}
+                className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg font-medium"
+              >
+                Start My Day
+              </button>
+              <button
+                onClick={() => setShowCheckIn(false)}
+                className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm"
+              >
+                Skip for now
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ============================================================================
+  // RENDER LOGIC
+  // ============================================================================
 
   // License activation screen
   if (checkingLicense) {
@@ -292,14 +549,44 @@ NEVER:
   // Main app
   return (
     <div className="flex h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      {showCheckIn && <DailyCheckInModal />}
+
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static overflow-y-auto`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-semibold text-green-800">CalmMom Assistant</h2>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
               <X className="w-6 h-6 text-gray-600" />
             </button>
+          </div>
+
+          {/* Streak Display */}
+          {streak > 0 && (
+            <div className="bg-gradient-to-r from-green-500 to-blue-500 rounded-lg p-4 text-white mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs opacity-90">Streak</p>
+                  <p className="text-2xl font-bold">{streak} days</p>
+                </div>
+                <TrendingUp className="w-8 h-8 opacity-75" />
+              </div>
+            </div>
+          )}
+
+          {/* Today's Progress */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Today's Focus
+              </h3>
+            </div>
+            {checkInData && (
+              <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
+                {checkInData.priority}
+              </p>
+            )}
           </div>
           
           <div className="flex-1 space-y-4">
@@ -346,6 +633,24 @@ NEVER:
           <Heart className="w-6 h-6 text-green-600 mr-2" />
           <h1 className="text-xl font-semibold text-gray-800">Your Safe Space</h1>
         </div>
+
+        {/* Accountability Message */}
+        {accountabilityMessage && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-6 mt-4">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-yellow-800">{accountabilityMessage.text}</p>
+                <button
+                  onClick={() => setAccountabilityMessage(null)}
+                  className="text-xs text-yellow-600 hover:text-yellow-700 mt-1"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6">
