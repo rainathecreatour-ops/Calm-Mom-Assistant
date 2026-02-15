@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Send, Sparkles, Menu, X, Lock, Check, CheckCircle, Circle, TrendingUp, Target, AlertCircle, Mic, MicOff } from 'lucide-react';
+import { Heart, Send, Sparkles, Menu, X, Lock, Check, CheckCircle, Circle, TrendingUp, Target, AlertCircle, Mic, MicOff, Download, DollarSign, FileText, Calendar, BookOpen } from 'lucide-react';
 
 // ============================================================================
 // ENHANCED SYSTEM PROMPT - The Core Intelligence
@@ -57,6 +57,28 @@ TONE:
 - Honest but kind
 - Like a good friend who tells you what you need to hear, not just what you want to hear
 
+INCOME GENERATION MODULE:
+When a mom asks about making money online or mentions financial stress:
+1. Ask about their skills, interests, and time availability (be realistic about mom schedules)
+2. Suggest SPECIFIC, ACTIONABLE online income ideas matched to their situation
+3. Give CONCRETE first steps (sign up for X, create Y, post on Z)
+4. Mention specific platforms/tools by name (Etsy, Upwork, Fiverr, Shopify, etc.)
+5. Set realistic income expectations (start with $100-500/month goals)
+6. Account for childcare/time constraints
+
+Examples of income paths to suggest:
+- Virtual assistant (flexible hours)
+- Freelance writing/editing
+- Etsy shop (printables, digital products)
+- Online tutoring
+- Social media management
+- Bookkeeping/admin work
+- Print-on-demand products
+- Course creation
+- Transcription work
+
+Always give: What to do → Where to do it → How to start today
+
 RED FLAGS (Refer to professional help):
 - Mentions of self-harm or harming children
 - Severe depression lasting weeks
@@ -98,6 +120,10 @@ const App = () => {
   // Voice input state
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+
+  // Template customization state
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   // ============================================================================
   // UTILITY FUNCTIONS
@@ -417,12 +443,206 @@ const App = () => {
     }
   };
 
+  const handleQuickTool = (toolName) => {
+    const quickToolPrompts = {
+      'reset': "I need a 2-minute reset right now. I'm feeling overwhelmed.",
+      'affirmations': "Can you give me some affirmations for overwhelmed moms?",
+      'meltdown': "My child is having a meltdown and I don't know how to handle it.",
+      'meals': "I need help with simple meal planning for my family.",
+      'income': "I want to make money online but don't know where to start. Can you help me figure out what I'm good at and give me a plan?",
+    };
+
+    const prompt = quickToolPrompts[toolName];
+    if (prompt) {
+      setInput(prompt);
+      setSidebarOpen(false);
+      // Auto-send the message
+      setTimeout(() => {
+        const event = new KeyboardEvent('keypress', { key: 'Enter' });
+        document.dispatchEvent(event);
+      }, 100);
+    }
+  };
+
+  const openTemplateModal = (templateType) => {
+    setSelectedTemplate(templateType);
+    setShowTemplateModal(true);
+  };
+
   const quickPrompts = [
     "I'm feeling completely overwhelmed today",
     "My toddler is having constant meltdowns",
     "I feel guilty about everything",
     "I need a 2-minute reset"
   ];
+
+  // ============================================================================
+  // TEMPLATE GENERATOR FUNCTIONS
+  // ============================================================================
+
+  const generateBudgetPDF = (data) => {
+    const { familyName, month } = data;
+    
+    const content = `
+FAMILY BUDGET TRACKER
+Family: ${familyName}
+Month: ${month}
+
+INCOME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Source 1: $_________
+Source 2: $_________
+Other: $_________
+TOTAL INCOME: $_________
+
+FIXED EXPENSES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Rent/Mortgage: $_________
+Utilities: $_________
+Insurance: $_________
+Car Payment: $_________
+Childcare: $_________
+TOTAL FIXED: $_________
+
+VARIABLE EXPENSES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Groceries: $_________
+Gas: $_________
+Eating Out: $_________
+Entertainment: $_________
+Clothing: $_________
+Personal Care: $_________
+Miscellaneous: $_________
+TOTAL VARIABLE: $_________
+
+SAVINGS & DEBT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Emergency Fund: $_________
+Savings Goal: $_________
+Debt Payment: $_________
+TOTAL SAVINGS/DEBT: $_________
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOTAL EXPENSES: $_________
+REMAINING: $_________
+
+Notes:
+_________________________________
+_________________________________
+_________________________________
+
+Created with CalmMom Assistant
+    `.trim();
+
+    downloadAsPDF(content, `${familyName}_Budget_${month}.pdf`);
+  };
+
+  const generateChoresPDF = (data) => {
+    const { childName, age } = data;
+    
+    const ageAppropriateChores = {
+      '2-3': ['Put toys in bin', 'Help feed pets', 'Wipe up spills'],
+      '4-5': ['Make bed', 'Set table', 'Water plants', 'Sort laundry'],
+      '6-8': ['Vacuum room', 'Fold laundry', 'Pack lunch', 'Take out trash'],
+      '9-12': ['Do dishes', 'Cook simple meals', 'Yard work', 'Clean bathroom'],
+    };
+
+    const ageGroup = age <= 3 ? '2-3' : age <= 5 ? '4-5' : age <= 8 ? '6-8' : '9-12';
+    const chores = ageAppropriateChores[ageGroup];
+
+    const content = `
+${childName.toUpperCase()}'S CHORE CHART
+Age: ${age} years old
+
+DAILY CHORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Mon  Tue  Wed  Thu  Fri  Sat  Sun
+${chores.map(chore => `${chore.padEnd(20)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+
+WEEKLY GOALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. _____________________________  ☐
+2. _____________________________  ☐
+3. _____________________________  ☐
+
+REWARDS THIS WEEK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5 chores = _____________________
+10 chores = ____________________
+All week = _____________________
+
+Great job, ${childName}! 🌟
+
+Created with CalmMom Assistant
+    `.trim();
+
+    downloadAsPDF(content, `${childName}_Chores.pdf`);
+  };
+
+  const generateJournalPDF = (data) => {
+    const { userName, date } = data;
+    
+    const content = `
+${userName.toUpperCase()}'S JOURNAL
+${date}
+
+HOW I'M FEELING TODAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_____________________________________
+_____________________________________
+_____________________________________
+
+WHAT'S ON MY MIND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_____________________________________
+_____________________________________
+_____________________________________
+_____________________________________
+_____________________________________
+
+WHAT WENT WELL TODAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_____________________________________
+_____________________________________
+_____________________________________
+
+WHAT WAS HARD TODAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_____________________________________
+_____________________________________
+_____________________________________
+
+TOMORROW I WILL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+_____________________________________
+_____________________________________
+_____________________________________
+
+GRATEFUL FOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. _________________________________
+2. _________________________________
+3. _________________________________
+
+Created with CalmMom Assistant
+    `.trim();
+
+    downloadAsPDF(content, `Journal_${date}.pdf`);
+  };
+
+  const downloadAsPDF = (content, filename) => {
+    // Create a simple text file (for MVP)
+    // In production, you'd use a library like jsPDF for actual PDFs
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.replace('.pdf', '.txt'); // Using .txt for now
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // ============================================================================
   // DAILY CHECK-IN COMPONENT
@@ -538,6 +758,129 @@ const App = () => {
   };
 
   // ============================================================================
+  // TEMPLATE CUSTOMIZATION MODAL
+  // ============================================================================
+  const TemplateModal = () => {
+    const [formData, setFormData] = useState({});
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      
+      if (selectedTemplate === 'budget') {
+        generateBudgetPDF(formData);
+      } else if (selectedTemplate === 'chores') {
+        generateChoresPDF(formData);
+      } else if (selectedTemplate === 'journal') {
+        generateJournalPDF(formData);
+      }
+      
+      setShowTemplateModal(false);
+      setFormData({});
+    };
+
+    const renderForm = () => {
+      if (selectedTemplate === 'budget') {
+        return (
+          <>
+            <input
+              type="text"
+              placeholder="Family Name (e.g., Smith Family)"
+              value={formData.familyName || ''}
+              onChange={(e) => setFormData({ ...formData, familyName: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Month (e.g., January 2025)"
+              value={formData.month || ''}
+              onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+          </>
+        );
+      } else if (selectedTemplate === 'chores') {
+        return (
+          <>
+            <input
+              type="text"
+              placeholder="Child's Name"
+              value={formData.childName || ''}
+              onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Child's Age"
+              min="2"
+              max="18"
+              value={formData.age || ''}
+              onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+          </>
+        );
+      } else if (selectedTemplate === 'journal') {
+        return (
+          <>
+            <input
+              type="text"
+              placeholder="Your Name"
+              value={formData.userName || ''}
+              onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+            <input
+              type="date"
+              value={formData.date || new Date().toISOString().split('T')[0]}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              required
+            />
+          </>
+        );
+      }
+    };
+
+    const templateTitles = {
+      budget: 'Budget Tracker',
+      chores: 'Chore Chart',
+      journal: 'Daily Journal'
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {templateTitles[selectedTemplate]}
+            </h2>
+            <button onClick={() => setShowTemplateModal(false)}>
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {renderForm()}
+            
+            <button
+              type="submit"
+              className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+            >
+              <Download className="w-5 h-5" />
+              Download Template
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // ============================================================================
   // RENDER LOGIC
   // ============================================================================
 
@@ -635,6 +978,7 @@ const App = () => {
   return (
     <div className="flex h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {showCheckIn && <DailyCheckInModal />}
+      {showTemplateModal && <TemplateModal />}
 
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static overflow-y-auto`}>
@@ -683,13 +1027,70 @@ const App = () => {
             </button>
 
             <div className="p-4 bg-green-50 rounded-lg">
-              <h3 className="font-medium text-green-900 mb-2">Quick Tools</h3>
-              <ul className="space-y-2 text-sm text-green-800">
-                <li>• 2-Minute Reset</li>
-                <li>• Affirmations</li>
-                <li>• Meltdown Guide</li>
-                <li>• Meal Planning</li>
-              </ul>
+              <h3 className="font-medium text-green-900 mb-3">Quick Tools</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleQuickTool('reset')}
+                  className="w-full text-left text-sm text-green-800 hover:text-green-900 hover:bg-green-100 p-2 rounded transition-colors"
+                >
+                  • 2-Minute Reset
+                </button>
+                <button
+                  onClick={() => handleQuickTool('affirmations')}
+                  className="w-full text-left text-sm text-green-800 hover:text-green-900 hover:bg-green-100 p-2 rounded transition-colors"
+                >
+                  • Affirmations
+                </button>
+                <button
+                  onClick={() => handleQuickTool('meltdown')}
+                  className="w-full text-left text-sm text-green-800 hover:text-green-900 hover:bg-green-100 p-2 rounded transition-colors"
+                >
+                  • Meltdown Guide
+                </button>
+                <button
+                  onClick={() => handleQuickTool('meals')}
+                  className="w-full text-left text-sm text-green-800 hover:text-green-900 hover:bg-green-100 p-2 rounded transition-colors"
+                >
+                  • Meal Planning
+                </button>
+                <button
+                  onClick={() => handleQuickTool('income')}
+                  className="w-full text-left text-sm text-green-800 hover:text-green-900 hover:bg-green-100 p-2 rounded transition-colors flex items-center gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Make Money Online
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Free Templates
+              </h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => openTemplateModal('budget')}
+                  className="w-full text-left text-sm text-blue-800 hover:text-blue-900 hover:bg-blue-100 p-2 rounded transition-colors flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Budget Tracker
+                </button>
+                <button
+                  onClick={() => openTemplateModal('chores')}
+                  className="w-full text-left text-sm text-blue-800 hover:text-blue-900 hover:bg-blue-100 p-2 rounded transition-colors flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Kids Chore Chart
+                </button>
+                <button
+                  onClick={() => openTemplateModal('journal')}
+                  className="w-full text-left text-sm text-blue-800 hover:text-blue-900 hover:bg-blue-100 p-2 rounded transition-colors flex items-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Daily Journal
+                </button>
+              </div>
             </div>
             
             <button
