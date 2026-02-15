@@ -540,43 +540,93 @@ Created with CalmMom Assistant
   const generateChoresPDF = (data) => {
     const { childName, age } = data;
     
-    const ageAppropriateChores = {
-      '2-3': ['Put toys in bin', 'Help feed pets', 'Wipe up spills'],
-      '4-5': ['Make bed', 'Set table', 'Water plants', 'Sort laundry'],
-      '6-8': ['Vacuum room', 'Fold laundry', 'Pack lunch', 'Take out trash'],
-      '9-12': ['Do dishes', 'Cook simple meals', 'Yard work', 'Clean bathroom'],
+    const choresByAge = {
+      '2-3': {
+        daily: ['Put toys in bin', 'Help feed pets'],
+        hygiene: ['Brush teeth (with help)', 'Wash hands', 'Put dirty clothes in hamper'],
+        pets: ['Fill water bowl (with help)', 'Pet gently', 'Help shake treat bag'],
+        homework: ['Look at picture books', 'Practice colors/shapes']
+      },
+      '4-5': {
+        daily: ['Make bed', 'Set table', 'Water plants'],
+        hygiene: ['Brush teeth independently', 'Comb hair', 'Take bath (supervised)', 'Wash face'],
+        pets: ['Fill water/food bowls', 'Help brush pet', 'Pick up pet toys'],
+        homework: ['Practice writing name', 'Count to 20', 'Color/draw for 10 min']
+      },
+      '6-8': {
+        daily: ['Tidy room', 'Fold laundry', 'Pack school bag', 'Clear table after meals'],
+        hygiene: ['Shower independently', 'Brush/floss teeth', 'Lay out clothes for tomorrow', 'Trim nails (with help)'],
+        pets: ['Feed pets on schedule', 'Clean litter box/cage', 'Walk dog (with adult)', 'Groom pet'],
+        homework: ['Complete all homework', 'Read for 20 minutes', 'Practice math facts', 'Pack homework in bag']
+      },
+      '9-12': {
+        daily: ['Vacuum room', 'Do dishes', 'Take out trash', 'Meal prep help'],
+        hygiene: ['Full shower routine', 'Deodorant', 'Change bedsheets weekly', 'Organize personal items'],
+        pets: ['Full feeding responsibility', 'Walk dog alone', 'Clean pet areas', 'Monitor pet health'],
+        homework: ['Complete all assignments', 'Study for tests', 'Organize binder/folders', 'Email teachers if needed']
+      },
+      '13+': {
+        daily: ['Clean bathroom', 'Cook simple meals', 'Yard work', 'Help with siblings'],
+        hygiene: ['Full hygiene independence', 'Laundry own clothes', 'Room deep cleaning weekly', 'Personal grooming'],
+        pets: ['Vet appointment reminders', 'Train pet tricks', 'Full pet care responsibility', 'Emergency pet care'],
+        homework: ['All homework + projects', 'Study plans', 'Time management', 'College/career research']
+      }
     };
 
-    const ageGroup = age <= 3 ? '2-3' : age <= 5 ? '4-5' : age <= 8 ? '6-8' : '9-12';
-    const chores = ageAppropriateChores[ageGroup];
+    const ageGroup = age <= 3 ? '2-3' : age <= 5 ? '4-5' : age <= 8 ? '6-8' : age <= 12 ? '9-12' : '13+';
+    const chores = choresByAge[ageGroup];
 
     const content = `
-${childName.toUpperCase()}'S CHORE CHART
-Age: ${age} years old
+╔════════════════════════════════════════════════════╗
+║      ${childName.toUpperCase()}'S CHORE CHART - AGE ${age}      ║
+╚════════════════════════════════════════════════════╝
 
-DAILY CHORES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DAILY HOUSEHOLD CHORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         Mon  Tue  Wed  Thu  Fri  Sat  Sun
-${chores.map(chore => `${chore.padEnd(20)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+${chores.daily.map(chore => `${chore.padEnd(24)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+
+HYGIENE & SELF-CARE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Mon  Tue  Wed  Thu  Fri  Sat  Sun
+${chores.hygiene.map(chore => `${chore.padEnd(24)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+
+PET CARE DUTIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Mon  Tue  Wed  Thu  Fri  Sat  Sun
+${chores.pets.map(chore => `${chore.padEnd(24)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+
+HOMEWORK & LEARNING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Mon  Tue  Wed  Thu  Fri  Sat  Sun
+${chores.homework.map(chore => `${chore.padEnd(24)} ☐    ☐    ☐    ☐    ☐    ☐    ☐`).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 WEEKLY GOALS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. _____________________________  ☐
-2. _____________________________  ☐
-3. _____________________________  ☐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. _______________________________________________  ☐
+2. _______________________________________________  ☐
+3. _______________________________________________  ☐
 
-REWARDS THIS WEEK
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5 chores = _____________________
-10 chores = ____________________
-All week = _____________________
+REWARD SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Complete 10 tasks    = _____________________________
+Complete 20 tasks    = _____________________________
+Perfect week (all)   = _____________________________
 
-Great job, ${childName}! 🌟
+NOTES FOR PARENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Age ${age} can typically handle these tasks ${age < 6 ? 'with supervision' : age < 10 ? 'with occasional reminders' : 'independently'}.
+Adjust difficulty as needed for your child's abilities.
 
+Great job, ${childName}! Keep up the amazing work! 🌟
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Created with CalmMom Assistant
     `.trim();
 
-    downloadAsPDF(content, `${childName}_Chores.pdf`);
+    downloadAsPDF(content, `${childName}_Chore_Chart.pdf`);
   };
 
   const generateJournalPDF = (data) => {
