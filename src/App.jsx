@@ -279,6 +279,36 @@ const App = () => {
     const isValid = await verifyLicenseKey(licenseKey);
 
     if (isValid) {
+      // Check if this is a different license than currently stored
+      const currentLicense = localStorage.getItem('calmmom-license');
+      const isDifferentUser = currentLicense && currentLicense !== licenseKey;
+
+      if (isDifferentUser) {
+        // Clear all data when switching users
+        const confirmSwitch = window.confirm(
+          'Switching to a different account will clear current data. Continue?'
+        );
+        
+        if (!confirmSwitch) {
+          setVerifying(false);
+          return;
+        }
+
+        // Clear all user-specific data
+        localStorage.removeItem('calmmom-messages');
+        localStorage.removeItem('calmmom-actions');
+        localStorage.removeItem('calmmom-checkins');
+        localStorage.removeItem('calmmom-last-checkin');
+        localStorage.removeItem('calmmom-streak');
+        
+        // Reset state
+        setMessages([]);
+        setActionItems([]);
+        setStreak(0);
+        setCheckInData(null);
+        setShowWelcome(true);
+      }
+
       setIsLicensed(true);
       localStorage.setItem('calmmom-license', licenseKey);
     } else {
@@ -467,6 +497,19 @@ const App = () => {
   const openTemplateModal = (templateType) => {
     setSelectedTemplate(templateType);
     setShowTemplateModal(true);
+  };
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm(
+      'Are you sure you want to logout? Your chat history will be saved for when you return.'
+    );
+    
+    if (confirmLogout) {
+      // Only clear license, keep user data for when they return
+      localStorage.removeItem('calmmom-license');
+      setIsLicensed(false);
+      setLicenseKey('');
+    }
   };
 
   const quickPrompts = [
@@ -1149,15 +1192,25 @@ Created with CalmMom Assistant
             >
               Clear Chat
             </button>
+
+            <button
+              onClick={handleLogout}
+              className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+            >
+              Logout
+            </button>
           </div>
 
           <div className="pt-4 border-t border-gray-200">
             <div className="text-xs text-gray-500 mb-2">
               A safe space for overwhelmed moms
             </div>
-            <div className="flex items-center text-xs text-green-700">
+            <div className="flex items-center text-xs text-green-700 mb-1">
               <Check className="w-3 h-3 mr-1" />
               Licensed
+            </div>
+            <div className="text-xs text-gray-400 break-all">
+              Key: {licenseKey.substring(0, 8)}...
             </div>
           </div>
         </div>
